@@ -16,7 +16,7 @@ from verl.trainer.main_ppo import create_rl_dataset, create_rl_sampler
 from verl.utils.dataset.rl_dataset import collate_fn
 from torchdata.stateful_dataloader import StatefulDataLoader
 from opentinker.environment.environment import RewardFunctionSpec
-from opentinker.environment.math.math_env import MathEnvironment
+from opentinker.environment.math.math_env_legacy import MathEnvironment
 from utils import math_reward_function, resolve_paths_in_config
 from scheduler_client_lifecycle import get_lifecycle_manager
 

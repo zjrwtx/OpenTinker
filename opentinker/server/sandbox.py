@@ -33,77 +33,6 @@ import argparse
 import ray
 
 
-# class Sandbox:
-#     """Sandbox to execute python code."""
-
-#     def __init__(self, host: str = "0.0.0.0", port: int = None):
-#         self.host = host
-#         self.port = port if port is not None else self._get_free_port()
-#         self.app = self._create_app()
-
-#     def _create_app(self) -> fastapi.FastAPI:
-#         """Create and configure FastAPI application."""
-#         app = fastapi.FastAPI()
-#         app.router.add_api_route("/run_code", self.code_execution, methods=["POST"])
-#         return app
-
-#     async def code_execution(self, request: Request):
-#         request_json = await request.json()
-#         code = request_json["code"]
-#         # print(f"execute code:\n{code}")
-
-#         _, temp_file = tempfile.mkstemp(suffix=".py", prefix="temp_code", dir=None, text=True)
-#         with open(temp_file, "w") as f:
-#             f.write(code)
-
-#         try:
-#             process = await asyncio.create_subprocess_exec(
-#                 sys.executable, temp_file, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-#             )
-
-#             stdout, stderr = await process.communicate()
-
-#             response = {
-#                 "status": "Success" if process.returncode == 0 else "Failed",
-#                 "run_result": {
-#                     "status": "Finished",
-#                     "stdout": stdout.decode(),
-#                     "stderr": stderr.decode(),
-#                     "return_code": process.returncode,
-#                 },
-#             }
-#             return JSONResponse(content=response)
-#         finally:
-#             try:
-#                 os.unlink(temp_file)
-#             except Exception:
-#                 pass
-
-#     def _get_free_port(self):
-#         with socket.socket() as sock:
-#             sock.bind(("", 0))
-#             return sock.getsockname()[1]
-
-#     def run(self):
-#         """Start the FastAPI server."""
-#         print(f"Starting Sandbox server at {self.host}:{self.port}")
-#         uvicorn.run(self.app, host=self.host, port=self.port, log_level="warning")
-
-#     def get_server_address(self) -> str:
-#         """Get FastAPI server address."""
-#         return f"{self.host}:{self.port}"
-
-
-# if __name__ == "__main__":
-#     parser = argparse.ArgumentParser(description="Run Sandbox code execution server")
-#     parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind the server to")
-#     parser.add_argument("--port", type=int, default=None, help="Port to bind the server to (default: auto-assign)")
-#     args = parser.parse_args()
-    
-#     sandbox = Sandbox(host=args.host, port=args.port)
-#     print(f"Sandbox server address: {sandbox.get_server_address()}")
-#     sandbox.run()
-
 @ray.remote(num_cpus=1)
 class Sandbox:
     """Sandbox to execute python code."""
@@ -213,3 +142,76 @@ class Sandbox:
     def get_server_address(self) -> str:
         """Get FastAPI server address."""
         return f"{self.address}:{self.port}"
+
+
+def start_sandbox_server(host: str = "0.0.0.0", port: int = None) -> tuple:
+    """Start a sandbox server and return the Ray actor and URL.
+    
+    This is a convenience function for creating a sandbox server for
+    code execution in multi-turn math training.
+    
+    Args:
+        host: Host to bind to (default: 0.0.0.0)
+        port: Port to use (auto-select if None)
+    
+    Returns:
+        Tuple of (sandbox_actor, sandbox_url) where:
+        - sandbox_actor: Ray actor reference (keep alive to maintain server)
+        - sandbox_url: URL of the sandbox server (e.g., "http://localhost:8000/run_code")
+    
+    Example:
+        sandbox, url = start_sandbox_server()
+        print(f"Sandbox running at {url}")
+        # Keep sandbox alive for the duration of training
+    """
+    import time
+    
+    # Create sandbox actor
+    sandbox = Sandbox.remote()
+    
+    # Start the server
+    ray.get(sandbox.start_server.remote())
+    
+    # Wait a bit for server to be fully ready
+    time.sleep(0.5)
+    
+    # Get the address
+    address = ray.get(sandbox.get_server_address.remote())
+    sandbox_url = f"http://{address}/run_code"
+    
+    return sandbox, sandbox_url
+
+
+def create_tool_config(sandbox_url: str, output_path: str = None) -> str:
+    """Create a tool config JSON file for the sandbox.
+    
+    Args:
+        sandbox_url: URL of the sandbox server
+        output_path: Path to save the config (auto-generated if None)
+    
+    Returns:
+        Path to the created config file
+    """
+    import tempfile
+    
+    config = {
+        "tools": [
+            {
+                "class_name": "opentinker.server.sandbox_tool.SandboxTool",
+                "config": {
+                    "type": "native",
+                    "sandbox_fusion_url": sandbox_url
+                }
+            }
+        ]
+    }
+    
+    if output_path is None:
+        fd, output_path = tempfile.mkstemp(suffix='.json', prefix='tool_config_')
+        with os.fdopen(fd, 'w') as f:
+            json.dump(config, f, indent=2)
+    else:
+        with open(output_path, 'w') as f:
+            json.dump(config, f, indent=2)
+    
+    return output_path

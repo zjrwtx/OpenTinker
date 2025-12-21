@@ -80,19 +80,23 @@ hostname -I
 ### 2. Start the Scheduler (Server Side)
 
 ```bash
-bash examples/opentinker/scripts/launch_scheduler.sh --scheduler-port <scheduler_port>
+bash opentinker/scripts/launch_scheduler.sh --scheduler-port <scheduler_port>
 ```
 
 ### 3. Start the Environment Server (Client Side)
 
 **For Math Environment:**
 ```bash
-python examples/opentinker/environment/math/math_server.py --port <env_port>
+# single turn
+python opentinker/environment/math/math_server.py --port <env_port>
+
+# multi turn tool call
+python opentinker/environment/math/code_interpreter_math_server.py --port <env_port>
 ```
 
 **For Gomoku Environment:**
 ```bash
-python examples/opentinker/environment/gomoku/gomoku_server.py --port <env_port>
+python opentinker/environment/gomoku/gomoku_server.py --port <env_port>
 ```
 
 ### 4. Run Training
@@ -107,15 +111,28 @@ python opentinker/data_preprocess/math_multiturn_w_interaction.py \
 
 
 ```bash
+# single turn
 python opentinker/client/math_client_unified.py \
     tokenizer_path=Qwen/Qwen2.5-1.5B \
     batch_size=16 \
-    val_batch_size=16 \
+    val_batch_size=64 \
     num_epochs=5 \
     save_freq=1000 \
     test_freq=5 \
     data_path=data/math_agentloop/train.parquet \
     val_data_path=data/math_agentloop/test.parquet \
+    scheduler_url=http://<server_endpoint>:<scheduler_port> \
+    interaction.config.env_port=<env_port> \
+    interaction.config.env_host=<client_endpoint>
+
+# multi turn tool ca
+python opentinker/client/math_code_interpreter_client.py \
+    tokenizer_path=Qwen/Qwen2.5-1.5B \
+    batch_size=16 \
+    val_batch_size=64 \
+    num_epochs=5 \
+    save_freq=1000 \
+    test_freq=5 \
     scheduler_url=http://<server_endpoint>:<scheduler_port> \
     interaction.config.env_port=<env_port> \
     interaction.config.env_host=<client_endpoint>
@@ -137,7 +154,17 @@ python opentinker/client/gomoku_client.py \
 
 **Math Inference:**
 ```bash
+# single turn
 python opentinker/client/math_inference_with_scheduler.py \
+    model_path=<model_name> \
+    data_path=data/math/test.parquet \
+    output_path=./tmp/results.jsonl \
+    max_samples=5 \
+    env_endpoint=http://<client_endpoint>:<env_port> \
+    scheduler_url=http://<server_endpoint>:<scheduler_port>
+
+# multi turn tool call
+python opentinker/client/math_code_interpreter_inference.py \
     model_path=<model_name> \
     data_path=data/math/test.parquet \
     output_path=./tmp/results.jsonl \
@@ -191,9 +218,14 @@ For advanced usage (REST API registration, using the key) and detailed configura
 
 Single-turn math reasoning environment where the model solves mathematical problems. It serves as a key example of a **data-driven environment**, loading data from parquet files.
 
+We also support **multi-turn tool call** mode (Code Interpreter), where the model can iteratively generate and execute Python code to solve math problems. This enables more complex reasoning through code execution feedback.
+
 | Component | Description |
 |-----------|-------------|
-| Server | `examples/opentinker/environment/math/math_server.py` |
+| Server (Single-turn) | `opentinker/environment/math/math_server.py` |
+| Server (Multi-turn Tool Call) | `opentinker/environment/math/code_interpreter_math_server.py` |
+| Client (Single-turn) | `opentinker/client/math_client_unified.py` |
+| Client (Multi-turn Tool Call) | `opentinker/client/math_code_interpreter_client.py` |
 | Data | Parquet files with math problems |
 | Reward | Correctness of mathematical solutions |
 
@@ -203,7 +235,7 @@ Multi-turn game environment where the model plays Gomoku against an opponent. It
 
 | Component | Description |
 |-----------|-------------|
-| Server | `examples/opentinker/environment/gomoku/gomoku_server.py` |
+| Server | `opentinker/environment/gomoku/gomoku_server.py` |
 | Data | Generated from simulated games |
 | Reward | Win/loss/draw outcomes |
 
