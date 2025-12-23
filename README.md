@@ -1,12 +1,17 @@
-<h1 align="center">🔧 OpenTinker</h1>
+<div align="center" id="opentinker">
+  <img src="assets/reallogo.png" alt="logo" width="500"/>
 
-<h3 align="center">Democratizing Agentic Reinforcement Learning as a Service</h3>
+  <p style="margin-top: 6px; font-size: 18px;">
+    <em>Democratizing Agentic Reinforcement Learning as a Service</em>
+  </p>
 
-<p align="center">
-  <a href="https://open-tinker.github.io/opentinker-page/"><img src="https://img.shields.io/badge/🌐_Project_Page-blue?style=for-the-badge" alt="Project Page"/></a>
-  <a href="https://wandb.ai/zsqzz/Open-Tinker?nw=nwuserzhusq20"><img src="https://img.shields.io/badge/Weights_&_Biases-FFCC33?style=for-the-badge&logo=weights-and-biases&logoColor=black" alt="WandB"/></a>
-
-
+  <p>
+    <a href="https://open-tinker.github.io/opentinker-page/">Project Page</a> ·
+    <a href="https://wandb.ai/zsqzz/Open-Tinker?nw=nwuserzhusq20">W&B</a> ·
+    <a href="https://deepwiki.com/open-tinker/OpenTinker">DeepWiki</a> ·
+    <a href="https://github.com/open-tinker/OpenTinker/issues">Issues</a>
+  </p>
+</div>
 
 
 ## 🌟 Key Features
