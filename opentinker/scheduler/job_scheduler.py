@@ -992,6 +992,12 @@ class JobSchedulerActor:
             if lora_adapter_path:
                 cmd.append(f"actor_rollout_ref.model.lora_adapter_path={lora_adapter_path}")
             
+            # Forward LoRA-specific learning rate if specified
+            lora_lr = lora_config.get("lr")
+            if lora_lr:
+                cmd.append(f"actor_rollout_ref.actor.optim.lr={lora_lr}")
+                logger.info(f"Job {job.job_id}: ✓ LoRA lr: {lora_lr}")
+            
             logger.info(f"Job {job.job_id}: ✓ LoRA enabled: rank={lora_rank}, alpha={lora_alpha}, target_modules={target_modules}")
         
         logger.info(f"Job {job.job_id}: Launching server with command: {' '.join(cmd)}")

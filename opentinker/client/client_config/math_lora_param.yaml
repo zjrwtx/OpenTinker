@@ -35,7 +35,7 @@ test_freq: 50
 val_batch_size: 100
 
 # Generation parameters
-temperature: 1
+temperature: 0.7
 top_p: 1
 max_new_tokens: 4098
 max_prompt_tokens: 4096
@@ -45,7 +45,7 @@ algorithm: "agent_loop"
 
 # RL Algorithm settings
 adv_estimator: "grpo"
-rollout_n: 5  # Reduced for LoRA to save memory
+rollout_n: 16  # Reduced for LoRA to save memory
 
 # LoRA configuration (ENABLED)
 # Reference: verl/examples/grpo_trainer/run_qwen2_5-3b_gsm8k_grpo_lora.sh
@@ -55,6 +55,9 @@ lora:
   target_modules: "all-linear"
   exclude_modules: null
   lora_adapter_path: null
+  # Learning rate for LoRA training (higher than full finetune)
+  # Recommended: 5e-6 for 1.5B, 3e-6 for 3B, 1e-6 for 7B+
+  lr: 5e-6
 
 # Interaction configuration
 interaction:

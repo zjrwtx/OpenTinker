@@ -55,7 +55,9 @@ def main(cfg):
 
         # actor-rollout-ref
         # cfg.actor_rollout_ref.model.path = cfg.model_path
-        cfg.actor_rollout_ref.actor.optim.lr = 1e-6
+        # Use CLI-provided lr if available, otherwise default to 1e-6
+        if cfg.actor_rollout_ref.actor.optim.get("lr") is None:
+            cfg.actor_rollout_ref.actor.optim.lr = 1e-6
         cfg.actor_rollout_ref.model.use_remove_padding = True
         cfg.actor_rollout_ref.model.enable_gradient_checkpointing = True
         cfg.actor_rollout_ref.actor.ppo_mini_batch_size = 16
@@ -94,6 +96,14 @@ def main(cfg):
         lora_rank = cfg.actor_rollout_ref.model.get("lora_rank", 0)
         if lora_rank > 0:
             logger.info(f"🔧 LoRA mode enabled: rank={lora_rank}")
+            
+            # Log current lr (may be set via CLI from client yaml)
+            current_lr = cfg.actor_rollout_ref.actor.optim.get("lr", 5e-6)
+            logger.info(f"  - lr: {current_lr}")
+            
+            # Entropy coefficient: 0 for stable LoRA training
+            cfg.actor_rollout_ref.actor.entropy_coeff = 0
+            
             # Enable layered summon for memory efficiency with LoRA
             cfg.actor_rollout_ref.rollout.layered_summon = True
             # Use safetensors format for LoRA adapter loading
